@@ -2676,28 +2676,32 @@ EOT
   end
 end
 
-if __FILE__ == $0
-  begin
-    argv = []
-    processing_change = nil
-
-    found_include_option = false
-    ARGV.each do |arg|
-      if found_include_option
-        $LOAD_PATH.unshift(arg)
-        found_include_option = false
+def parse_arguments(args)
+  argv = []
+  found_include_option = false
+  args.each do |arg|
+    if found_include_option
+      $LOAD_PATH.unshift(arg)
+      found_include_option = false
+    else
+      case arg
+      when "-I", "--include"
+	found_include_option = true
+      when /\A-I/, /\A--include=?/
+	path = $POSTMATCH
+	$LOAD_PATH.unshift(path) unless path.empty?
       else
-        case arg
-        when "-I", "--include"
-          found_include_option = true
-        when /\A-I/, /\A--include=?/
-          path = $POSTMATCH
-          $LOAD_PATH.unshift(path) unless path.empty?
-        else
-          argv << arg
-        end
+	argv << arg
       end
     end
+  end
+  argv
+end
+
+if __FILE__ == $0
+  begin
+    processing_change = nil
+    argv = parse_arguments(ARGV)
 
     mailer = GitCommitMailer.parse_options_and_create(argv)
 
